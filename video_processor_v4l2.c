@@ -41,7 +41,20 @@
 #include <string.h>
 
 #include <linux/videodev2.h>
+
+#ifdef HAVE_LIBV4L2
 #include <libv4l2.h>
+#else
+/* Without libv4l2 the raw kernel interface is used instead. Pixel format
+ * emulation and conversion provided by libv4l2 are then unavailable. */
+#include <sys/ioctl.h>
+#include <unistd.h>
+#define v4l2_open   open
+#define v4l2_close  close
+#define v4l2_ioctl  ioctl
+#define v4l2_mmap   mmap
+#define v4l2_munmap munmap
+#endif
 
 #ifdef RARCH_INTERNAL
 #include "internal_cores.h"

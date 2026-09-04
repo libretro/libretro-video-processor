@@ -30,14 +30,9 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
 endif
 
 TARGET_NAME := video_processor
-LIBV4L2		= -lv4l2
 
-ifneq ($(findstring Linux,$(shell uname -a)),)
-   CFLAGS +=	-DHAVE_UDEV 
-   LIBUDEV	= -ludev
-   CFLAGS +=	-DHAVE_ALSA
-   LIBASOUND	= -lasound
-endif
+# Returns 1 if the given header can be found by the compiler, empty otherwise.
+check_header = $(shell $(CC) -E -include $(1) -x c /dev/null >/dev/null 2>&1 && echo 1)
 
 ifeq ($(ARCHFLAGS),)
 ifeq ($(archs),ppc)
@@ -107,6 +102,25 @@ else
    CC = gcc
    TARGET := $(TARGET_NAME)_libretro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
+endif
+
+# Optional Linux dependencies. Each one is autodetected so that the core still
+# builds (with the matching feature disabled) when its headers are missing.
+ifneq (,$(filter unix linux-portable,$(platform)))
+ifneq (,$(findstring Linux,$(shell uname -s)))
+ifneq (,$(call check_header,libv4l2.h))
+   CFLAGS    += -DHAVE_LIBV4L2
+   LIBV4L2   := -lv4l2
+endif
+ifneq (,$(call check_header,alsa/asoundlib.h))
+   CFLAGS    += -DHAVE_ALSA
+   LIBASOUND := -lasound
+endif
+ifneq (,$(call check_header,libudev.h))
+   CFLAGS    += -DHAVE_UDEV
+   LIBUDEV   := -ludev
+endif
+endif
 endif
 
 LDFLAGS += $(LIBV4L2) $(LIBASOUND) $(LIBUDEV)

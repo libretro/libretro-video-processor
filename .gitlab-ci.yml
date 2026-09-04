@@ -1,0 +1,66 @@
+# DESCRIPTION: GitLab CI/CD for libRetro (NOT FOR GitLab-proper)
+
+##############################################################################
+################################# BOILERPLATE ################################
+##############################################################################
+
+# Core definitions
+.core-defs:
+  variables:
+    MAKEFILE: Makefile
+    CORENAME: video_processor
+
+# The core captures from V4L2 devices and plays back through ALSA, so it is
+# Linux-only. The build images do not carry all of the development headers,
+# and the Makefile disables whatever it cannot find, so pull them in first.
+.core-deps:
+  before_script:
+    - export NUMPROC=$(($(nproc)/5))
+    - apt-get update -qy && apt-get install -qy libv4l-dev libasound2-dev libudev-dev
+
+# Inclusion templates, required for the build to work
+include:
+  ################################## DESKTOPS ################################
+  # Linux 64-bit
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/linux-x64.yml'
+
+  # Linux 32-bit
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/linux-i686.yml'
+
+  # Linux ARM 64-bit
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/linux-aarch64.yml'
+
+# Stages for building
+stages:
+  - build-prepare
+  - build-shared
+  - build-static
+
+##############################################################################
+#################################### STAGES ##################################
+##############################################################################
+#
+################################### DESKTOPS #################################
+# Linux 64-bit
+libretro-build-linux-x64:
+  extends:
+    - .libretro-linux-x64-make-default
+    - .core-defs
+    - .core-deps
+
+# Linux 32-bit
+libretro-build-linux-i686:
+  extends:
+    - .libretro-linux-i686-make-default
+    - .core-defs
+    - .core-deps
+
+# Linux ARM 64-bit
+libretro-build-linux-aarch64:
+  extends:
+    - .libretro-linux-aarch64-make-default
+    - .core-defs
+    - .core-deps
